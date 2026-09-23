@@ -53,13 +53,16 @@ async def _run_case(title: str, query: str, **kwargs) -> None:
 async def run_interactive(**kwargs) -> None:
     print("Modo interactivo — escribí tu pregunta sobre las políticas de TechCorp")
     print("   (escribí 'salir' para terminar)\n")
-    while True:
-        pregunta_usuario = input("Vos: ").strip()
-        if pregunta_usuario.lower() in ("salir", "exit", "quit", ""):
-            print("\nListo, terminamos la sesión.")
-            break
-        await _run_case("Consulta", pregunta_usuario, **kwargs)
-        print("-" * 80)
+    try:
+        while True:
+            pregunta_usuario = input("Vos: ").strip()
+            if pregunta_usuario.lower() in ("salir", "exit", "quit", ""):
+                print("\nListo, terminamos la sesión.")
+                break
+            await _run_case("Consulta", pregunta_usuario, **kwargs)
+            print("-" * 80)
+    except (KeyboardInterrupt, EOFError):
+        print("\nListo, terminamos la sesión.")
 
 
 async def run_demo(
