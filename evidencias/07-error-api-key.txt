@@ -1,0 +1,2 @@
+$ OPENAI_API_KEY= python -c "get_model('openai')"
+Error controlado: Falta OPENAI_API_KEY.

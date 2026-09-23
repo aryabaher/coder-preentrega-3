@@ -1,0 +1,48 @@
+$ python main.py --provider openai
+Índice existente detectado — cargando sin reindexar
+Documentos en la colección: 12
+=== Pregunta en los documentos (camino feliz) ===
+Pregunta: ¿Cuántos días de vacaciones corresponden a un empleado con 5 años de antigüedad?
+
+Índice existente detectado — cargando sin reindexar
+Documentos en la colección: 12
+RESPUESTA: 21 días corridos
+FUENTES: ['politica_seguridad_informatica.txt', 'politica_vacaciones.txt']
+Fragmentos usados: 4
+{
+  "respuesta": "21 días corridos",
+  "fuentes": [
+    "politica_seguridad_informatica.txt",
+    "politica_vacaciones.txt"
+  ],
+  "fragmentos_recuperados": 4
+}
+
+=== Pregunta trampa (fuera de contexto) ===
+Pregunta: ¿Cuál es la política de bonos por rendimiento anual en TechCorp?
+
+Índice existente detectado — cargando sin reindexar
+Documentos en la colección: 12
+RESPUESTA: No tengo acceso a esa información en los documentos disponibles.
+FUENTES: ['onboarding_nuevos_empleados.txt', 'politica_seguridad_informatica.txt', 'politica_teletrabajo.txt']
+Fragmentos usados: 4
+{
+  "respuesta": "No tengo acceso a esa información en los documentos disponibles.",
+  "fuentes": [
+    "onboarding_nuevos_empleados.txt",
+    "politica_seguridad_informatica.txt",
+    "politica_teletrabajo.txt"
+  ],
+  "fragmentos_recuperados": 4
+}
+
+
+INFO ingesta Índice existente detectado — cargando sin reindexar
+INFO rag [openai] RAG query (80 caracteres)...
+INFO ingesta Índice existente detectado — cargando sin reindexar
+INFO httpx2 HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO rag [openai] RAG OK: fuentes=['politica_seguridad_informatica.txt', 'politica_vacaciones.txt'] fragmentos=4
+INFO rag [openai] RAG query (64 caracteres)...
+INFO ingesta Índice existente detectado — cargando sin reindexar
+INFO httpx2 HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO rag [openai] RAG OK: fuentes=['onboarding_nuevos_empleados.txt', 'politica_seguridad_informatica.txt', 'politica_teletrabajo.txt'] fragmentos=4

@@ -1,0 +1,2 @@
+$ python -c "asyncio.run(get_rag_response('  '))"
+Error controlado: query vacío: no hay nada que embeddear ni preguntar.

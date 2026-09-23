@@ -1,0 +1,42 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Bytecode y cachés de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Empaquetado / distribución
+build/
+dist/
+*.egg-info/
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Store vectorial local (se regenera con python ingesta.py)
+vectorstore/
+
+# Modelo local de sentence-transformers (si se cachea en el repo)
+.cache/
+models/
+
+# Sistema operativo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporales locales
+_colab_pistas.*
+_extract_colab.py
+_captura_evidencias.py

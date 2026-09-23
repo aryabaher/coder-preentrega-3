@@ -1,0 +1,27 @@
+Índice existente detectado — cargando sin reindexar
+Documentos en la colección: 12
+Retriever k=4 → 4 fragmentos
+--- Fragmento 1 (fuente: politica_vacaciones.txt) ---
+Política de Vacaciones - TechCorp
+
+Todos los empleados en relación de dependencia directa de TechCorp tienen derecho a
+días de descanso anual pago, ca ...
+
+--- Fragmento 2 (fuente: politica_teletrabajo.txt) ---
+Política de Teletrabajo - TechCorp
+
+TechCorp adopta un esquema de trabajo híbrido para todas las áreas cuyas funciones no
+requieran presencia física o ...
+
+--- Fragmento 3 (fuente: politica_seguridad_informatica.txt) ---
+Datos de clientes. Está prohibido copiar bases, exportaciones o tickets a unidades
+personales, WhatsApp o correo no corporativo. Las pruebas se hacen  ...
+
+--- Fragmento 4 (fuente: politica_seguridad_informatica.txt) ---
+Política de Seguridad Informática - TechCorp
+
+Todo empleado con acceso a sistemas internos de TechCorp debe utilizar autenticación
+de dos factores (2F ...
+
+
+INFO ingesta Índice existente detectado — cargando sin reindexar

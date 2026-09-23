@@ -1,0 +1,58 @@
+Política de Teletrabajo - TechCorp
+
+TechCorp adopta un esquema de trabajo híbrido para todas las áreas cuyas funciones no
+requieran presencia física obligatoria. El esquema estándar es de 3 días de trabajo
+remoto y 2 días de trabajo presencial por semana, coordinados con el líder de equipo.
+
+Los empleados deben contar con una conexión a internet estable de al menos 20 Mbps y
+un espacio de trabajo adecuado. TechCorp provee un subsidio mensual para conectividad
+y equipamiento de home office, sujeto a la presentación de comprobantes.
+
+Durante los días de trabajo remoto, se espera que el empleado esté disponible en el
+horario laboral habitual (9 a 18 hs) y responda a las comunicaciones internas dentro
+de un margen razonable. El incumplimiento reiterado de disponibilidad puede derivar en
+la revisión del esquema de teletrabajo asignado.
+
+Las áreas de Soporte Técnico Nivel 1 y Recepción mantienen un esquema 100% presencial
+por la naturaleza de sus funciones.
+
+Días presenciales. Los dos días en oficina se acuerdan con el líder al inicio de cada
+trimestre. El equipo debe coincidir al menos un día común para reuniones de planificación.
+Cambios de día presencial se piden con 48 horas de anticipación, salvo incidente de
+fuerza mayor. No se autoriza un esquema 5 días remoto de forma permanente.
+
+Requisitos técnicos. La conexión de al menos 20 Mbps se verifica con una prueba de
+velocidad al activar el esquema híbrido y cada vez que hay un incidente de
+disponibilidad. El espacio de trabajo debe permitir videollamadas con cámara encendida
+en las reuniones de equipo. TechCorp no cubre alquiler de coworking ni mudanzas.
+
+Subsidio. El subsidio mensual cubre conectividad y periféricos de home office
+(auriculares, teclado, monitor). Se rinde con factura a nombre del empleado o de
+TechCorp, según indique Administración. El tope y las categorías elegibles se
+publican en el sistema interno de Recursos Humanos. Un mes sin comprobantes no se
+paga en forma retroactiva más allá de 30 días.
+
+Disponibilidad. El horario 9 a 18 hs es el de referencia en la zona horaria de la
+oficina asignada. Las respuestas a chats y correos internos se esperan dentro de
+una hora en ese rango, salvo que la persona esté en una reunión marcada en el
+calendario. Más de tres incidentes de inasistencia digital en un mes disparan una
+revisión del esquema con el líder y Recursos Humanos.
+
+Excepciones presenciales. Soporte Técnico Nivel 1 y Recepción no entran al híbrido.
+Otras funciones pueden declararse presenciales por el líder cuando el rol exige
+manipulación de hardware, atención de mostrador o guardia de sala de servidores.
+Esa declaración se revisa cada semestre.
+
+Viajes y visitas. Un día de visita a cliente o a otra sede cuenta como día
+presencial. No se combina con el subsidio de coworking. El empleado registra la
+visita en el calendario del equipo.
+
+Seguridad en remoto. El acceso a sistemas internos desde la casa usa la VPN
+corporativa y cumple la política de seguridad informática: 2FA, equipo con perfil
+de gestión y bloqueo de pantalla. Está prohibido trabajar desde redes públicas
+sin VPN.
+
+Desactivación. El esquema híbrido puede suspenderse temporalmente ante un incidente
+operativo, una auditoría presencial o un plan de onboarding de un compañero nuevo.
+La suspensión la comunica el líder por escrito y no puede superar 30 días corridos
+sin revisión de Recursos Humanos.

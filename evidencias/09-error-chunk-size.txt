@@ -1,0 +1,2 @@
+$ construir_splitter(chunk_size=200, chunk_overlap=70)
+Error controlado: chunk_size debe ser >= 500 tokens.

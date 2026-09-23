@@ -1,0 +1,13 @@
+$ python -m pytest -v tests/test_retries.py::test_get_rag_response_429_queda_controlado
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Software\Coder\coder-preentrega-3\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Software\Coder\coder-preentrega-3
+configfile: pytest.ini
+plugins: anyio-4.15.1, langsmith-0.14.0, asyncio-1.2.0, mock-3.15.1, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/test_retries.py::test_get_rag_response_429_queda_controlado PASSED [100%]
+
+============================== 1 passed in 6.63s ==============================

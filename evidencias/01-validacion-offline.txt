@@ -1,0 +1,61 @@
+=== Esquema Pydantic (schemas.py) ===
+RespuestaLLM válido: Un empleado con 5 años accede a 21 días ...
+respuesta vacía rechazada ANTES de la API: 1 error(es)
+RAGResponse fuentes=['politica_vacaciones.txt'] fragmentos=4
+
+=== Ingesta / chunking / persistencia ===
+INFO Documentos cargados: 4
+DirectoryLoader archivos: 4
+INFO Fragmentos generados: 12
+RecursiveCharacterTextSplitter fragmentos: 12
+chunk_size=500 chunk_overlap=70 (piso 50)
+fuentes: ['onboarding_nuevos_empleados.txt', 'politica_seguridad_informatica.txt', 'politica_teletrabajo.txt', 'politica_vacaciones.txt']
+chunks de politica_vacaciones.txt: 3
+No hay índice previo — indexando documentos por primera vez
+INFO Documentos cargados: 4
+INFO Fragmentos generados: 12
+Documentos en la colección: 12
+Chroma.from_documents count=12
+ya_existe_indice: True
+as_retriever k=4 → 4 fragmentos
+top fuente: politica_vacaciones.txt
+formatear_documentos incluye Fuente: True
+
+=== Cadena LCEL (chain.py) ===
+ChatPromptTemplate variables=['contexto', 'formato', 'pregunta']
+Usa {contexto}: True
+Usa {pregunta}: True
+get_rag_response es coroutine: True
+PydanticOutputParser(pydantic_object=RespuestaLLM): True
+pipe prompt | llm | parser_llm: True
+ainvoke: True
+async def get_rag_response: True
+No lo sé en prompt: True
+No tengo acceso a esa información: True
+parser_llm.get_format_instructions: True
+from_tiktoken_encoder: True
+chunk_size=500: True
+chunk_overlap=70: True
+HuggingFaceEmbeddings: True
+sentence-transformers/all-MiniLM-L6-v2: True
+
+=== Fábrica get_model ===
+ChatOpenAI: True
+provider == "openai": True
+ChatAnthropic: True
+provider == "anthropic": True
+ChatGoogleGenerativeAI: True
+provider == "gemini": True
+
+=== Resiliencia (JSON incompleto / red / rate limit) ===
+OutputParserException en retry: True
+ValidationError en retry: True
+IncompleteOutputError en retry: True
+RateLimitError (openai+anthropic) en TRANSIENT: True
+finish_reason=length → IncompleteOutputError (sin transformar objeto): Salida incompleta: finish_reason=length. Aumentá max_tokens o reintentá.
+query vacía → ConsultaVaciaError: query vacío: no hay nada que embeddear ni preguntar.
+INFO Sin evidencia en el contexto — rechazo grounded (no es error de parseo).
+texto plano 'No tengo acceso…' → RAGResponse (no retry): True
+chunk_size < 500 → IngestaError: chunk_size debe ser >= 500 tokens.
+
+Validación offline OK. Para la prueba live: python main.py
