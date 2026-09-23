@@ -27,7 +27,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Variables de entorno: copiá `.env.example` a `.env` y completá `OPENAI_API_KEY` (proveedor por defecto).
+1. Variables de entorno: copiá `.env.example` a `.env` y completá `OPENAI_API_KEY` (proveedor por defecto).
 
 **Windows (PowerShell):**
 
@@ -41,25 +41,35 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-3. Ingesta de `/data` (chunking + ChromaDB en `./vectorstore`). Si el índice ya existe, no reindexa.
+1. Ingesta de `/data` (chunking + ChromaDB en `./vectorstore`). Si el índice ya existe, no reindexa.
+
+Camino offline (embeddings deterministas, no baja sentence-transformers):
 
 ```
 python ingesta.py --offline
 python ingesta.py --offline --force
+python main.py --offline --provider openai
+```
+
+Camino HuggingFace (mismo modelo al indexar y al consultar):
+
+```
+python ingesta.py
+python main.py --provider openai
 ```
 
 Sin `--offline` usa `HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")` para indexar y para consultar. La primera corrida puede bajar el modelo.
 
-4. Cadena RAG asíncrona: pregunta cuya respuesta está en los documentos y pregunta trampa.
+El flag `--offline` tiene que ser el mismo en la ingesta y en la consulta: Chroma no mezcla vectores de distinto embedding. Si el índice se armó con `--offline`, `main.py` también va con `--offline`. Si se armó sin ese flag, las consultas van sin `--offline`. Para cambiar de camino, reindexá con `--force` (si no, el índice existente se reutiliza y Chroma responde `Collection expecting embedding with dimension of 64, got 384` o al revés).
+
+Otras corridas:
 
 ```
-python main.py --offline --provider openai
-python main.py --provider openai
 python main.py --interactive
 python main.py --max-tokens 16
 ```
 
-`--offline` evita bajar sentence-transformers (embeddings deterministas). El LLM sigue necesitando la API key, salvo que solo corras el chequeo offline:
+El LLM sigue necesitando la API key, salvo que solo corras el chequeo offline:
 
 ```
 python validacion.py
@@ -102,77 +112,93 @@ Las `fuentes` las arma el código a partir de los metadatos reales de Chroma, no
 
 ## Archivos del repositorio
 
-| Artefacto | Dónde está |
-|-----------|------------|
-| Dataset de ejemplo (`.txt`) | `data/` (`politica_vacaciones.txt`, `politica_teletrabajo.txt`, `politica_seguridad_informatica.txt`, `onboarding_nuevos_empleados.txt`) |
-| Script de ingesta (`DirectoryLoader`, `RecursiveCharacterTextSplitter.from_tiktoken_encoder`, `chunk_size=500`, `chunk_overlap=70`, `Chroma.from_documents`) | `ingesta.py` |
-| Persistencia local | `./vectorstore` · colección `techcorp_policies` |
-| Embeddings (mismo modelo al indexar y al consultar) | `embeddings.py` → `HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")` |
-| Retriever `as_retriever(search_type="similarity", search_kwargs={"k": 4})` | `ingesta.py` → `get_retriever()` |
-| `RespuestaLLM` + `RAGResponse` (`respuesta` + `fuentes`) | `schemas.py` |
-| `PydanticOutputParser(pydantic_object=RespuestaLLM)` y `async def get_rag_response(query: str)` | `chain.py` |
-| Cadena LCEL `prompt \| llm \| parser_llm` | `chain.py` → `build_chain()` |
-| `get_model()` → `ChatGoogleGenerativeAI` / `ChatOpenAI` / `ChatAnthropic` | `llm_client/models.py` |
-| Mini-script (pregunta OK + pregunta trampa) | `main.py` |
-| Tests (`conftest.py`, `test_models.py`, `test_retries.py`, `test_ingesta.py`, `test_rag.py`) | `tests/` |
-| `pytest.ini` | `testpaths = tests` · `asyncio_mode = auto` · `addopts = -ra -q` |
-| `requirements-dev.txt` | `pytest`, `pytest-asyncio`, `pytest-mock`, `respx` |
-| `.env.example` | `.env.example` |
-| `requirements.txt` | `langchain`, `chromadb`, `openai`, `pydantic`, `langchain-chroma`, `langchain-huggingface`, `tiktoken`, `pytest`, `pytest-asyncio`, `pytest-mock`, `respx` |
+
+| Artefacto                                                                                                                                                    | Dónde está                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dataset de ejemplo (`.txt`)                                                                                                                                  | `data/` (`politica_vacaciones.txt`, `politica_teletrabajo.txt`, `politica_seguridad_informatica.txt`, `onboarding_nuevos_empleados.txt`)                   |
+| Script de ingesta (`DirectoryLoader`, `RecursiveCharacterTextSplitter.from_tiktoken_encoder`, `chunk_size=500`, `chunk_overlap=70`, `Chroma.from_documents`) | `ingesta.py`                                                                                                                                               |
+| Persistencia local                                                                                                                                           | `./vectorstore` · colección `techcorp_policies`                                                                                                            |
+| Embeddings (mismo modelo al indexar y al consultar)                                                                                                          | `embeddings.py` → `HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")`                                                             |
+| Retriever `as_retriever(search_type="similarity", search_kwargs={"k": 4})`                                                                                   | `ingesta.py` → `get_retriever()`                                                                                                                           |
+| `RespuestaLLM` + `RAGResponse` (`respuesta` + `fuentes`)                                                                                                     | `schemas.py`                                                                                                                                               |
+| `PydanticOutputParser(pydantic_object=RespuestaLLM)` y `async def get_rag_response(query: str)`                                                              | `chain.py`                                                                                                                                                 |
+| Cadena LCEL `prompt | llm | parser_llm`                                                                                                                      | `chain.py` → `build_chain()`                                                                                                                               |
+| `get_model()` → `ChatGoogleGenerativeAI` / `ChatOpenAI` / `ChatAnthropic`                                                                                    | `llm_client/models.py`                                                                                                                                     |
+| Mini-script (pregunta OK + pregunta trampa)                                                                                                                  | `main.py`                                                                                                                                                  |
+| Tests (`conftest.py`, `test_models.py`, `test_retries.py`, `test_ingesta.py`, `test_rag.py`)                                                                 | `tests/`                                                                                                                                                   |
+| `pytest.ini`                                                                                                                                                 | `testpaths = tests` · `asyncio_mode = auto` · `addopts = -ra -q`                                                                                           |
+| `requirements-dev.txt`                                                                                                                                       | `pytest`, `pytest-asyncio`, `pytest-mock`, `respx`                                                                                                         |
+| `.env.example`                                                                                                                                               | `.env.example`                                                                                                                                             |
+| `requirements.txt`                                                                                                                                           | `langchain`, `chromadb`, `openai`, `pydantic`, `langchain-chroma`, `langchain-huggingface`, `tiktoken`, `pytest`, `pytest-asyncio`, `pytest-mock`, `respx` |
+
 
 No commitees `.env` ni `vectorstore/`. El repo solo versiona `.env.example` y `/data`.
 
 ## Cómo se cubre la consigna
 
-| Requisito | Cómo se cumple | Evidencia |
-|----------|----------------|-----------|
-| Ingesta y chunking | `DirectoryLoader` lee `/data`. `RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=500, chunk_overlap=70)` (piso de overlap: 50). | `ingesta.py` · `test_ingesta.py` · `evidencias/01-validacion-offline.txt` |
-| ChromaDB persistente | Cliente en `./vectorstore`. Si el índice existe, no reindexa. Mismo embedding para indexar y consultar. | `ingesta.py` → `ya_existe_indice` · `test_ingesta_persiste_y_no_reindexa` |
-| Retriever | `vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 4})` | `get_retriever()` · `evidencias/02-ingesta-offline.txt` |
-| Generación grounded | Prompt de filtro de veracidad. `chain = prompt \| llm \| parser_llm`. Si no está en el CONTEXTO: "No tengo acceso…" / "No lo sé". | `chain.py` · `SYSTEM_PROMPT` |
-| `get_rag_response` async | `await retriever.ainvoke` + `await chain.ainvoke` + parseo a `RAGResponse` con `fuentes`. | `chain.py` · `tests/test_rag.py` · `evidencias/05-pytest.txt` |
-| Dos pruebas | Pregunta de vacaciones (en documentos) y pregunta de bonos (trampa). | `main.py` · `test_pregunta_en_documentos` · `test_pregunta_trampa_no_alucina` |
-| Credenciales | Keys solo en `.env`. El repo trae `.env.example`. | `.gitignore` · `.env.example` |
+
+| Requisito                | Cómo se cumple                                                                                                                                 | Evidencia                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Ingesta y chunking       | `DirectoryLoader` lee `/data`. `RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=500, chunk_overlap=70)` (piso de overlap: 50). | `ingesta.py` · `test_ingesta.py` · `evidencias/01-validacion-offline.txt`     |
+| ChromaDB persistente     | Cliente en `./vectorstore`. Si el índice existe, no reindexa. Mismo embedding para indexar y consultar.                                        | `ingesta.py` → `ya_existe_indice` · `test_ingesta_persiste_y_no_reindexa`     |
+| Retriever                | `vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 4})`                                                                   | `get_retriever()` · `evidencias/02-ingesta-offline.txt`                       |
+| Generación grounded      | Prompt de filtro de veracidad. `chain = prompt | llm | parser_llm`. Si no está en el CONTEXTO: "No tengo acceso…" / "No lo sé".                | `chain.py` · `SYSTEM_PROMPT`                                                  |
+| `get_rag_response` async | `await retriever.ainvoke` + `await chain.ainvoke` + parseo a `RAGResponse` con `fuentes`.                                                      | `chain.py` · `tests/test_rag.py` · `evidencias/05-pytest.txt`                 |
+| Dos pruebas              | Pregunta de vacaciones (en documentos) y pregunta de bonos (trampa).                                                                           | `main.py` · `test_pregunta_en_documentos` · `test_pregunta_trampa_no_alucina` |
+| Credenciales             | Keys solo en `.env`. El repo trae `.env.example`.                                                                                              | `.gitignore` · `.env.example`                                                 |
+
+
+
 
 ## Cómo está armada la cadena
 
-| Pieza | Dónde | Qué hace |
-|-------|--------|----------|
-| Dataset | `data/` | Cuatro políticas de TechCorp (vacaciones, teletrabajo, seguridad, onboarding). No hay política de bonos. |
-| Splitter | `ingesta.py` | Tokens con tiktoken, overlap 70 (mínimo pedido: 50), separadores de párrafo/oración. |
-| Vectorstore | `langchain_chroma.Chroma` | `persist_directory="./vectorstore"`, `collection_name="techcorp_policies"`. |
-| Retriever | `get_retriever` | top_k = 4. Fuera de 3–5 se rechaza (contexto infinito). |
-| Prompt | `ChatPromptTemplate` | Variables `{contexto}`, `{pregunta}`, `{formato}`. |
-| Parser | `PydanticOutputParser` | Solo `RespuestaLLM.respuesta`. Las fuentes salen de `metadata["source"]`. |
-| Ejecución | `get_rag_response` | Async. Reintenta 3 veces ante 429, red o JSON truncado. |
+
+| Pieza       | Dónde                     | Qué hace                                                                                                 |
+| ----------- | ------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Dataset     | `data/`                   | Cuatro políticas de TechCorp (vacaciones, teletrabajo, seguridad, onboarding). No hay política de bonos. |
+| Splitter    | `ingesta.py`              | Tokens con tiktoken, overlap 70 (mínimo pedido: 50), separadores de párrafo/oración.                     |
+| Vectorstore | `langchain_chroma.Chroma` | `persist_directory="./vectorstore"`, `collection_name="techcorp_policies"`.                              |
+| Retriever   | `get_retriever`           | top_k = 4. Fuera de 3–5 se rechaza (contexto infinito).                                                  |
+| Prompt      | `ChatPromptTemplate`      | Variables `{contexto}`, `{pregunta}`, `{formato}`.                                                       |
+| Parser      | `PydanticOutputParser`    | Solo `RespuestaLLM.respuesta`. Las fuentes salen de `metadata["source"]`.                                |
+| Ejecución   | `get_rag_response`        | Async. Reintenta 3 veces ante 429, red o JSON truncado.                                                  |
+
+
+
 
 ## Variables de entorno
 
-| Variable | Obligatorio | Para qué |
-|----------|-------------|----------|
-| `LLM_PROVIDER` | No (default `openai`) | `openai`, `anthropic` o `gemini` |
-| `OPENAI_API_KEY` | Si usás OpenAI (default) | Key de la API |
-| `OPENAI_MODEL` | No (`gpt-4o-mini`) | Modelo OpenAI |
-| `ANTHROPIC_API_KEY` | Si usás Anthropic | Key de la API |
-| `ANTHROPIC_MODEL` | No (`claude-sonnet-4-6`) | Modelo Anthropic |
-| `GOOGLE_API_KEY` | Si usás Gemini | Key de AI Studio (también acepta `GEMINI_API_KEY`) |
-| `GEMINI_MODEL` | No (`gemini-flash-latest`) | Modelo Gemini |
-| `LLM_TIMEOUT` | No (`30`) | Timeout HTTP en segundos |
+
+| Variable            | Obligatorio                | Para qué                                           |
+| ------------------- | -------------------------- | -------------------------------------------------- |
+| `LLM_PROVIDER`      | No (default `openai`)      | `openai`, `anthropic` o `gemini`                   |
+| `OPENAI_API_KEY`    | Si usás OpenAI (default)   | Key de la API                                      |
+| `OPENAI_MODEL`      | No (`gpt-4o-mini`)         | Modelo OpenAI                                      |
+| `ANTHROPIC_API_KEY` | Si usás Anthropic          | Key de la API                                      |
+| `ANTHROPIC_MODEL`   | No (`claude-sonnet-4-6`)   | Modelo Anthropic                                   |
+| `GOOGLE_API_KEY`    | Si usás Gemini             | Key de AI Studio (también acepta `GEMINI_API_KEY`) |
+| `GEMINI_MODEL`      | No (`gemini-flash-latest`) | Modelo Gemini                                      |
+| `LLM_TIMEOUT`       | No (`30`)                  | Timeout HTTP en segundos                           |
+
+
+
 
 ## Evidencias
 
-| Archivo | Qué demuestra |
-|---------|---------------|
-| `evidencias/01-validacion-offline.txt` | Chunking 500/70, índice Chroma, `get_rag_response` async, `PydanticOutputParser`, `finish_reason=length`. |
-| `evidencias/02-ingesta-offline.txt` | `python ingesta.py --offline --force`: fragmentos y retriever k=4. |
-| `evidencias/03-openai-rag.txt` | `python main.py --provider openai`: pregunta en documentos (21 días) y pregunta trampa (no alucina). |
-| `evidencias/04-anthropic-rag.txt` | `python main.py --provider anthropic`: mismo par de preguntas, `ChatAnthropic`. |
-| `evidencias/05-pytest.txt` | `python -m pytest -v`: factory, keys, 429, truncamiento, ingesta y RAG con mocks. |
-| `evidencias/06-error-consulta-vacia.txt` | `get_rag_response("  ")` → `ConsultaVaciaError`. |
-| `evidencias/07-error-api-key.txt` | Sin `OPENAI_API_KEY` → `Falta OPENAI_API_KEY.` |
-| `evidencias/08-error-max-tokens.txt` | `python main.py --provider openai --max-tokens 16`: `finish_reason=length` tras 3 reintentos. |
-| `evidencias/09-error-chunk-size.txt` | `chunk_size=200` → `IngestaError`. |
-| `evidencias/10-error-429-pytest.txt` | Mock de `GoogleRateLimitError` / 429 (sin pegarle a la API). |
+
+| Archivo                                  | Qué demuestra                                                                                             |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `evidencias/01-validacion-offline.txt`   | Chunking 500/70, índice Chroma, `get_rag_response` async, `PydanticOutputParser`, `finish_reason=length`. |
+| `evidencias/02-ingesta-offline.txt`      | `python ingesta.py --offline --force`: fragmentos y retriever k=4.                                        |
+| `evidencias/03-openai-rag.txt`           | `python main.py --provider openai`: pregunta en documentos (21 días) y pregunta trampa (no alucina).      |
+| `evidencias/04-anthropic-rag.txt`        | `python main.py --provider anthropic`: mismo par de preguntas, `ChatAnthropic`.                           |
+| `evidencias/05-pytest.txt`               | `python -m pytest -v`: factory, keys, 429, truncamiento, ingesta y RAG con mocks.                         |
+| `evidencias/06-error-consulta-vacia.txt` | `get_rag_response(" ")` → `ConsultaVaciaError`.                                                           |
+| `evidencias/07-error-api-key.txt`        | Sin `OPENAI_API_KEY` → `Falta OPENAI_API_KEY.`                                                            |
+| `evidencias/08-error-max-tokens.txt`     | `python main.py --provider openai --max-tokens 16`: `finish_reason=length` tras 3 reintentos.             |
+| `evidencias/09-error-chunk-size.txt`     | `chunk_size=200` → `IngestaError`.                                                                        |
+| `evidencias/10-error-429-pytest.txt`     | Mock de `GoogleRateLimitError` / 429 (sin pegarle a la API).                                              |
+
 
 Salida de `python -m pytest -v`:
 
@@ -210,6 +236,8 @@ tests/test_retries.py::test_get_rag_response_429_queda_controlado PASSED
 tests/test_retries.py::test_get_rag_response_incompleto_tras_retry PASSED
 ============================= 31 passed in 7.09s ==============================
 ```
+
+
 
 ## Manejo de errores personalizados
 
