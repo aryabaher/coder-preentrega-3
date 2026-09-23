@@ -18,6 +18,16 @@ PREGUNTA_OK = (
 )
 PREGUNTA_TRAMPA = "¿Cuál es la política de bonos por rendimiento anual en TechCorp?"
 
+_cierre_impreso = False
+
+
+def _despedir() -> None:
+    global _cierre_impreso
+    if _cierre_impreso:
+        return
+    _cierre_impreso = True
+    print("\nListo, terminamos la sesión.")
+
 
 def _configure_stdio() -> None:
     if sys.platform == "win32":
@@ -53,16 +63,17 @@ async def _run_case(title: str, query: str, **kwargs) -> None:
 async def run_interactive(**kwargs) -> None:
     print("Modo interactivo — escribí tu pregunta sobre las políticas de TechCorp")
     print("   (escribí 'salir' para terminar)\n")
-    try:
-        while True:
+    while True:
+        try:
             pregunta_usuario = input("Vos: ").strip()
-            if pregunta_usuario.lower() in ("salir", "exit", "quit", ""):
-                print("\nListo, terminamos la sesión.")
-                break
-            await _run_case("Consulta", pregunta_usuario, **kwargs)
-            print("-" * 80)
-    except (KeyboardInterrupt, EOFError):
-        print("\nListo, terminamos la sesión.")
+        except (EOFError, KeyboardInterrupt):
+            _despedir()
+            return
+        if pregunta_usuario.lower() in ("salir", "exit", "quit", ""):
+            _despedir()
+            return
+        await _run_case("Consulta", pregunta_usuario, **kwargs)
+        print("-" * 80)
 
 
 async def run_demo(
@@ -129,15 +140,18 @@ def main() -> None:
     except LLMClientError as exc:
         print(f"Error controlado: {exc}")
         raise SystemExit(1)
-    asyncio.run(
-        run_demo(
-            provider=args.provider,
-            interactive=args.interactive,
-            offline=args.offline,
-            force=args.force,
-            max_tokens=args.max_tokens,
+    try:
+        asyncio.run(
+            run_demo(
+                provider=args.provider,
+                interactive=args.interactive,
+                offline=args.offline,
+                force=args.force,
+                max_tokens=args.max_tokens,
+            )
         )
-    )
+    except KeyboardInterrupt:
+        _despedir()
 
 
 if __name__ == "__main__":
