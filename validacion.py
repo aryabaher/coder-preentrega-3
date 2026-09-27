@@ -130,6 +130,8 @@ def check_cadena() -> None:
     print("from_tiktoken_encoder:", "from_tiktoken_encoder" in ingesta_src)
     print("chunk_size=500:", "chunk_size=500" in ingesta_src)
     print("chunk_overlap=70:", "chunk_overlap=70" in ingesta_src)
+    print("chunk_size=chunk_size:", "chunk_size=chunk_size" in ingesta_src)
+    print("search_kwargs k de la llamada:", 'search_kwargs={"k": k}' in ingesta_src)
     emb_src = inspect.getsource(embeddings_mod)
     print("HuggingFaceEmbeddings:", "HuggingFaceEmbeddings" in emb_src)
     print(

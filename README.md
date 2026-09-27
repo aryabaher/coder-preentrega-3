@@ -67,7 +67,11 @@ Otras corridas:
 ```
 python main.py --interactive
 python main.py --max-tokens 16
+python ingesta.py --offline --force --chunk-size 800 --chunk-overlap 80 --k 3
+python main.py --offline --provider openai --k 3
 ```
+
+`chunk_size`, `chunk_overlap` y `k` tienen default de consigna (500 / 70 / 4) y se pueden cambiar **desde la llamada** o con flags. El piso sigue valiendo: size ≥ 500, overlap ≥ 50, k entre 3 y 5. Si cambiás el chunking, reindexá con `--force`.
 
 El LLM sigue necesitando la API key, salvo que solo corras el chequeo offline:
 
@@ -119,7 +123,7 @@ Las `fuentes` las arma el código a partir de los metadatos reales de Chroma, no
 | Script de ingesta (`DirectoryLoader`, `RecursiveCharacterTextSplitter.from_tiktoken_encoder`, `chunk_size=500`, `chunk_overlap=70`, `Chroma.from_documents`) | `ingesta.py`                                                                                                                                               |
 | Persistencia local                                                                                                                                           | `./vectorstore` · colección `techcorp_policies`                                                                                                            |
 | Embeddings (mismo modelo al indexar y al consultar)                                                                                                          | `embeddings.py` → `HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")`                                                             |
-| Retriever `as_retriever(search_type="similarity", search_kwargs={"k": 4})`                                                                                   | `ingesta.py` → `get_retriever()`                                                                                                                           |
+| Retriever `as_retriever(search_type="similarity", search_kwargs={"k": k})` (default `k=4`)                                                                   | `ingesta.py` → `get_retriever()`                                                                                                                           |
 | `RespuestaLLM` + `RAGResponse` (`respuesta` + `fuentes`)                                                                                                     | `schemas.py`                                                                                                                                               |
 | `PydanticOutputParser(pydantic_object=RespuestaLLM)` y `async def get_rag_response(query: str)`                                                              | `chain.py`                                                                                                                                                 |
 | Cadena LCEL `prompt | llm | parser_llm`                                                                                                                      | `chain.py` → `build_chain()`                                                                                                                               |
@@ -141,7 +145,7 @@ No commitees `.env` ni `vectorstore/`. El repo solo versiona `.env.example` y `/
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Ingesta y chunking       | `DirectoryLoader` lee `/data`. `RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=500, chunk_overlap=70)` (piso de overlap: 50). | `ingesta.py` · `test_ingesta.py` · `evidencias/01-validacion-offline.txt`     |
 | ChromaDB persistente     | Cliente en `./vectorstore`. Si el índice existe, no reindexa. Mismo embedding para indexar y consultar.                                        | `ingesta.py` → `ya_existe_indice` · `test_ingesta_persiste_y_no_reindexa`     |
-| Retriever                | `vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 4})`                                                                   | `get_retriever()` · `evidencias/02-ingesta-offline.txt`                       |
+| Retriever                | `vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": k})` (default 4)                                                   | `get_retriever()` · `evidencias/02-ingesta-offline.txt`                       |
 | Generación grounded      | Prompt de filtro de veracidad. `chain = prompt | llm | parser_llm`. Si no está en el CONTEXTO: "No tengo acceso…" / "No lo sé".                | `chain.py` · `SYSTEM_PROMPT`                                                  |
 | `get_rag_response` async | `await retriever.ainvoke` + `await chain.ainvoke` + parseo a `RAGResponse` con `fuentes`.                                                      | `chain.py` · `tests/test_rag.py` · `evidencias/05-pytest.txt`                 |
 | Dos pruebas              | Pregunta de vacaciones (en documentos) y pregunta de bonos (trampa).                                                                           | `main.py` · `test_pregunta_en_documentos` · `test_pregunta_trampa_no_alucina` |
@@ -158,7 +162,7 @@ No commitees `.env` ni `vectorstore/`. El repo solo versiona `.env.example` y `/
 | Dataset     | `data/`                   | Cuatro políticas de TechCorp (vacaciones, teletrabajo, seguridad, onboarding). No hay política de bonos. |
 | Splitter    | `ingesta.py`              | Tokens con tiktoken, overlap 70 (mínimo pedido: 50), separadores de párrafo/oración.                     |
 | Vectorstore | `langchain_chroma.Chroma` | `persist_directory="./vectorstore"`, `collection_name="techcorp_policies"`.                              |
-| Retriever   | `get_retriever`           | top_k = 4. Fuera de 3–5 se rechaza (contexto infinito).                                                  |
+| Retriever   | `get_retriever`           | `k` desde la llamada (default 4). Fuera de 3–5 se rechaza (contexto infinito).                           |
 | Prompt      | `ChatPromptTemplate`      | Variables `{contexto}`, `{pregunta}`, `{formato}`.                                                       |
 | Parser      | `PydanticOutputParser`    | Solo `RespuestaLLM.respuesta`. Las fuentes salen de `metadata["source"]`.                                |
 | Ejecución   | `get_rag_response`        | Async. Reintenta 3 veces ante 429, red o JSON truncado.                                                  |
@@ -205,11 +209,13 @@ Salida de `python -m pytest -v`:
 ```
 tests/test_ingesta.py::test_cargar_documentos_data PASSED
 tests/test_ingesta.py::test_chunk_size_minimo_500 PASSED
+tests/test_ingesta.py::test_splitter_usa_parametros_de_la_llamada PASSED
 tests/test_ingesta.py::test_chunk_size_menor_a_500_falla PASSED
 tests/test_ingesta.py::test_overlap_menor_a_50_falla PASSED
 tests/test_ingesta.py::test_fragmentar_produce_varios_chunks PASSED
 tests/test_ingesta.py::test_ingesta_persiste_y_no_reindexa PASSED
 tests/test_ingesta.py::test_retriever_k_4 PASSED
+tests/test_ingesta.py::test_retriever_usa_k_de_la_llamada PASSED
 tests/test_ingesta.py::test_data_vacia PASSED
 tests/test_ingesta.py::test_top_k_fuera_de_rango PASSED
 tests/test_models.py::test_build_model_creates_chat_openai PASSED
@@ -234,7 +240,7 @@ tests/test_retries.py::test_finish_reason_length_no_transforma PASSED
 tests/test_retries.py::test_process_query_vacio PASSED
 tests/test_retries.py::test_get_rag_response_429_queda_controlado PASSED
 tests/test_retries.py::test_get_rag_response_incompleto_tras_retry PASSED
-============================= 31 passed in 7.09s ==============================
+============================= 33 passed in 7.09s ==============================
 ```
 
 

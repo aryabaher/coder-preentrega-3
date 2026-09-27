@@ -14,7 +14,13 @@ from langchain_core.runnables import RunnableLambda
 from pydantic import ValidationError
 
 from errors import ConsultaVaciaError, RAGError
-from ingesta import get_retriever, ingestir_documentos
+from ingesta import (
+    CHUNK_OVERLAP,
+    CHUNK_SIZE,
+    TOP_K,
+    get_retriever,
+    ingestir_documentos,
+)
 from llm_client import (
     IncompleteOutputError,
     LLMClientError,
@@ -171,6 +177,9 @@ async def get_rag_response(
     max_tokens: int | None = None,
     embeddings: Any = None,
     persist_directory: str | None = None,
+    k: int = TOP_K,
+    chunk_size: int = CHUNK_SIZE,
+    chunk_overlap: int = CHUNK_OVERLAP,
 ) -> RAGResponse:
     """Recupera fragmentos, llama al LLM en async y parsea a RAGResponse."""
 
@@ -185,8 +194,10 @@ async def get_rag_response(
         store = ingestir_documentos(
             embeddings=embeddings,
             persist_directory=persist_directory or "./vectorstore",
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
         )
-        retriever = get_retriever(store)
+        retriever = get_retriever(store, k=k)
 
     # a. Búsqueda de similitud en ChromaDB
     docs = await retriever.ainvoke(cleaned)

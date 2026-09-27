@@ -10,7 +10,7 @@ import sys
 from chain import get_rag_response
 from embeddings import DeterministicEmbeddings
 from errors import RAGError
-from ingesta import ingestir_documentos
+from ingesta import CHUNK_OVERLAP, CHUNK_SIZE, TOP_K, ingestir_documentos
 from llm_client import LLMClientError, resolve_provider
 
 PREGUNTA_OK = (
@@ -83,14 +83,25 @@ async def run_demo(
     offline: bool,
     force: bool,
     max_tokens: int | None,
+    chunk_size: int,
+    chunk_overlap: int,
+    k: int,
 ) -> None:
     embeddings = DeterministicEmbeddings() if offline else None
-    ingestir_documentos(embeddings=embeddings, force=force)
+    ingestir_documentos(
+        embeddings=embeddings,
+        force=force,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
 
     kwargs = {
         "provider": provider,
         "embeddings": embeddings,
         "max_tokens": max_tokens,
+        "k": k,
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
     }
 
     if interactive:
@@ -133,6 +144,24 @@ def main() -> None:
         default=None,
         help="Tope de tokens de salida. Un valor bajo (p. ej. 16) fuerza finish_reason=length.",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=CHUNK_SIZE,
+        help="Techo de tokens por fragmento al indexar (default: 500).",
+    )
+    parser.add_argument(
+        "--chunk-overlap",
+        type=int,
+        default=CHUNK_OVERLAP,
+        help="Overlap en tokens al indexar (default: 70).",
+    )
+    parser.add_argument(
+        "--k",
+        type=int,
+        default=TOP_K,
+        help="Vecinos del retriever (default: 4). Rango: 3–5.",
+    )
     args = parser.parse_args()
     try:
         if args.provider:
@@ -148,6 +177,9 @@ def main() -> None:
                 offline=args.offline,
                 force=args.force,
                 max_tokens=args.max_tokens,
+                chunk_size=args.chunk_size,
+                chunk_overlap=args.chunk_overlap,
+                k=args.k,
             )
         )
     except KeyboardInterrupt:

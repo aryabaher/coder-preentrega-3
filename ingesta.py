@@ -25,9 +25,9 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 PERSIST_DIR = "./vectorstore"
 COLLECTION_NAME = "techcorp_policies"
-CHUNK_SIZE = 500
+CHUNK_SIZE = 500  # default de llamada: chunk_size=500
 CHUNK_OVERLAP_MINIMO = 50
-CHUNK_OVERLAP = 70
+CHUNK_OVERLAP = 70  # default de llamada: chunk_overlap=70
 TOP_K = 4
 
 # De mayor a menor coherencia. Solo se baja de nivel si el bloque sigue superando CHUNK_SIZE.
@@ -106,8 +106,8 @@ def construir_splitter(
         raise IngestaError("chunk_overlap debe ser menor que chunk_size.")
 
     return RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-        chunk_size=500,
-        chunk_overlap=70,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
         separators=SEMANTIC_SEPARATORS,
     )
 
@@ -165,6 +165,8 @@ def ingestir_documentos(
     embeddings: Optional[Embeddings] = None,
     *,
     force: bool = False,
+    chunk_size: int = CHUNK_SIZE,
+    chunk_overlap: int = CHUNK_OVERLAP,
 ) -> Chroma:
     """Indexa /data en ChromaDB. Si el índice ya existe, lo reutiliza."""
 
@@ -187,7 +189,11 @@ def ingestir_documentos(
 
     print("No hay índice previo — indexando documentos por primera vez")
     documentos_crudos = cargar_documentos(data_dir)
-    chunks = fragmentar_documentos(documentos_crudos)
+    chunks = fragmentar_documentos(
+        documentos_crudos,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
     try:
         vectorstore = Chroma.from_documents(
             documents=chunks,
@@ -215,7 +221,7 @@ def get_retriever(
     store = vectorstore or ingestir_documentos(**kwargs)
     retriever = store.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 4},
+        search_kwargs={"k": k},
     )
     return retriever
 
@@ -252,6 +258,24 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="Usa DeterministicEmbeddings (sin bajar sentence-transformers).",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=CHUNK_SIZE,
+        help="Techo de tokens por fragmento (default: 500). Piso: 500.",
+    )
+    parser.add_argument(
+        "--chunk-overlap",
+        type=int,
+        default=CHUNK_OVERLAP,
+        help="Overlap en tokens (default: 70). Piso: 50.",
+    )
+    parser.add_argument(
+        "--k",
+        type=int,
+        default=TOP_K,
+        help="Vecinos del retriever (default: 4). Rango: 3–5.",
+    )
     args = parser.parse_args(argv)
 
     embeddings = DeterministicEmbeddings() if args.offline else get_embeddings()
@@ -261,14 +285,16 @@ def main(argv: Optional[List[str]] = None) -> int:
             persist_directory=args.persist_dir,
             embeddings=embeddings,
             force=args.force,
+            chunk_size=args.chunk_size,
+            chunk_overlap=args.chunk_overlap,
         )
     except (IngestaError, PersistenciaError) as exc:
         print(f"Error controlado: {exc}")
         return 1
 
-    retriever = get_retriever(store, k=4)
+    retriever = get_retriever(store, k=args.k)
     muestra = retriever.invoke("¿Cuántos días de vacaciones tengo?")
-    print(f"Retriever k=4 → {len(muestra)} fragmentos")
+    print(f"Retriever k={args.k} → {len(muestra)} fragmentos")
     for i, doc in enumerate(muestra, 1):
         print(f"--- Fragmento {i} (fuente: {doc.metadata['source']}) ---")
         print(doc.page_content[:150], "...\n")

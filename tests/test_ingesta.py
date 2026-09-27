@@ -39,6 +39,12 @@ def test_chunk_size_minimo_500():
     assert splitter._chunk_overlap == CHUNK_OVERLAP == 70
 
 
+def test_splitter_usa_parametros_de_la_llamada():
+    splitter = construir_splitter(chunk_size=800, chunk_overlap=80)
+    assert splitter._chunk_size == 800
+    assert splitter._chunk_overlap == 80
+
+
 def test_chunk_size_menor_a_500_falla():
     with pytest.raises(IngestaError, match="500"):
         construir_splitter(chunk_size=200, chunk_overlap=50)
@@ -91,9 +97,24 @@ def test_retriever_k_4(tmp_path):
     )
     retriever = get_retriever(store, k=4)
     hits = retriever.invoke("días corridos de vacaciones por antigüedad")
+    assert retriever.search_kwargs["k"] == 4
     assert 1 <= len(hits) <= 4
     blob = " ".join(h.page_content.lower() for h in hits)
     assert "vacaciones" in blob
+
+
+def test_retriever_usa_k_de_la_llamada(tmp_path):
+    embeddings = DeterministicEmbeddings()
+    store = ingestir_documentos(
+        data_dir=ROOT / "data",
+        persist_directory=str(tmp_path / "vectorstore"),
+        embeddings=embeddings,
+        force=True,
+    )
+    retriever = get_retriever(store, k=3)
+    hits = retriever.invoke("días corridos de vacaciones por antigüedad")
+    assert retriever.search_kwargs["k"] == 3
+    assert len(hits) == 3
 
 
 def test_data_vacia(tmp_path):
